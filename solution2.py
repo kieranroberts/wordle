@@ -1,4 +1,3 @@
-import os
 from collections import Counter
 from argparse import ArgumentParser
 from functools import reduce
