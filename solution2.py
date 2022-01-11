@@ -176,9 +176,9 @@ def modify_dict_upto_key(my_dict, key):
 
 
 def best_first_guess(*, answers, first_guesses, print_output=True):
-    least_guesses = (["snort"], 25741)
-    least_fails = (["plant"], 444)
-    least_mean = (["tires"], 4.2159267912772584)
+    least_guesses = ([], np.inf)
+    least_fails = ([], np.inf)
+    least_mean = ([], np.inf)
     with open(first_guesses) as f:
         all_guesses = [word.rstrip() for word in f.readlines()]
 
