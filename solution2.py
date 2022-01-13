@@ -7,6 +7,31 @@ with open("sgb-words.txt") as f:
     words = [word.rstrip() for word in f.readlines()]
 
 
+def find_indices(word, w):
+    return [i for i, x in enumerate(word) if x in w]
+
+
+def letter_counts(*, guess, pattern):
+    # wc = Counter(guess)
+    # for w, v in wc.items():
+    lc = list()
+    m = pattern.count("n")
+    for w in set(guess):
+        I = find_indices(guess, w)
+        I_c = [i for i in range(len(guess)) if i not in I]
+        sub_pattern = [pattern[i] for i in I]
+        sub_pattern_c = [pattern[i] for i in I_c]
+        n = len(find_indices(sub_pattern, "cp"))
+        n0 = len(find_indices(sub_pattern_c, "r"))
+        if "n" not in sub_pattern and "r" not in sub_pattern:
+            n = n + m + n0
+        # n = len(I)
+        # n0 = len(find_indices(sub_pattern, "r"))
+        lc.append((w, n))
+
+    return lc
+
+
 def filter_words(*, words: list, letter: str, idx: int, present, pos) -> list:
     if present and pos:
         return list(filter(lambda x: letter == x[idx], words))
@@ -53,6 +78,10 @@ def find_most_likely_words(*, words: list) -> dict:
 
 def next_guess(*, words: list, prev_word: str, pattern: str) -> str:
     words0 = words
+    # do the letter count filter here
+    lc = letter_counts(guess=prev_word, pattern=pattern)
+    for w, c in lc:
+        words0 = list(filter(lambda x: x.count(w) <= c, words0))
     for idx, w in enumerate(prev_word):
         if pattern[idx] == "p":
             present = True
@@ -63,6 +92,8 @@ def next_guess(*, words: list, prev_word: str, pattern: str) -> str:
         elif pattern[idx] == "c":
             present = True
             pos = True
+        else:
+            continue
         words0 = filter_words(words=words0, letter=w, idx=idx, present=present, pos=pos)
 
     guess = find_most_likely_words(words=words0)
@@ -71,13 +102,18 @@ def next_guess(*, words: list, prev_word: str, pattern: str) -> str:
 
 def calculate_pattern(*, answer: str, guess: str) -> str:
     pattern = str()
+    lc = Counter(answer)
     for idx, w in enumerate(guess):
         if w not in answer:
             pattern += "n"
-        elif w in answer and answer[idx] != w:
+        elif w in answer and answer[idx] != w and lc[w] >= 1:
             pattern += "p"
-        elif answer[idx] == w:
+            lc[w] = lc[w] - 1
+        elif answer[idx] == w and lc[w] >= 1:
             pattern += "c"
+            lc[w] = lc[w] - 1
+        elif lc[w] <= 0:
+            pattern += "r"
     return pattern
 
 
@@ -87,7 +123,7 @@ def enter_pattern(*, guess, answer):
     else:
         pattern = input("Enter Wordle matching output: ")
         pattern = pattern.lower()
-        while len(list(filter(lambda x: x in "npc", pattern))) != 5:
+        while len(list(filter(lambda x: x in "npcr", pattern))) != 5:
             pattern = input(
                 "Must be 5-letter string of N (not present),P (present but not correct position) and C (present and correct position): "
             )
@@ -155,7 +191,7 @@ def solve_all_words(*, answers, first_guess, print_output=True, write_fails=Fals
             num_guesses += k * v
     if print_output == True:
         print(
-            f"Total number of guesses: {num_guesses}\nAverage number of guesses: {avg_guesses:.4f}\nNumber of failed guesses: {freq[0]}"
+            f"Total number of guesses: {num_guesses}\nAverage number of guesses: {avg_guesses}\nNumber of failed guesses: {freq[0]}"
         )
         return first_guess, num_guesses, freq[0], avg_guesses
     else:
@@ -187,7 +223,7 @@ def best_first_guess(*, answers, first_guesses, print_output=True):
         k: v
         for k, v in sorted(all_guesses.items(), key=lambda item: item[1], reverse=True)
     }
-    all_guesses = modify_dict_upto_key(all_guesses, "plant")
+    # all_guesses = modify_dict_upto_key(all_guesses, """)
 
     for guess, val in all_guesses.items():
         g, num_guesses, num_fails, avg_guesses = solve_all_words(
