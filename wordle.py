@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import numpy as np
 from utils import *
 
-with open("sgb-words.txt") as f:
+with open("brown_v4.txt") as f:
     words = [word.rstrip() for word in f.readlines()]
 
 
